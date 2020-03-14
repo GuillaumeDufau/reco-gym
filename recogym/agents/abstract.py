@@ -22,7 +22,7 @@ class Agent:
            agent recommends"""
         return {
             't': observation.context().time(),
-            'u': observation.context().user(),
+            'u': observation.context().plant(),
         }
 
     def train(self, observation, action, reward, done=False):
@@ -145,8 +145,6 @@ class FeatureProvider:
     def observe(self, observation):
         """
         Collect Observations
-
-        The data are collected for a certain user
 
         :param observation:
         :return:

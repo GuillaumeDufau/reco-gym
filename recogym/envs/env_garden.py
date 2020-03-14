@@ -12,7 +12,7 @@ from .configuration import Configuration
 from .context_plant import Context_v1
 from .features.time import DefaultTimeGenerator
 from .observation import Observation
-from .session import OrganicSessions
+from .session_plant import OrganicSessions
 from ..agents import Agent
 
 # Arguments shared between all environments.
@@ -44,6 +44,9 @@ stop = 2
 
 
 class AbstractEnv(gym.Env, ABC):
+    """
+    This is the structure of one plant
+    """
 
     def __init__(self):
         gym.Env.__init__(self)
@@ -52,26 +55,35 @@ class AbstractEnv(gym.Env, ABC):
         self.first_step = True
         self.config = None
         self.state = None
-        self.current_user_id = None
+        self.current_plant_id = None
         self.current_time = None
+        self.plant_type = 'Tomato'
+        self.maturity = 0
+        self.harvested = False
+        self.water_level = 6
         self.empty_sessions = OrganicSessions()
+        self.action_dict = ['water','harvest']
+    
 
     def reset_random_seed(self, epoch=0):
         # Initialize Random State.
         assert (self.config.random_seed is not None)
         self.rng = RandomState(self.config.random_seed + epoch)
 
-    def init_gym(self, args):
+    def init_gym(self, args):   
 
         self.config = Configuration(args)
 
-        # Defining Action Space.
-        self.action_space = Discrete(self.config.num_products)
+        # Defining Action Space. Gym spaces. Potential actions of the gardener -> randomness underlying those choses
+        # due to the weather conditions and the actual state of the plant
+        self.action_space = Discrete(3) #num_products
 
+        #############
         if 'time_generator' not in args:
             self.time_generator = DefaultTimeGenerator(self.config)
         else:
             self.time_generator = self.config.time_generator
+        ##############
 
         # Setting random seed for the first time.
         self.reset_random_seed()
@@ -87,23 +99,25 @@ class AbstractEnv(gym.Env, ABC):
         # Set random seed for second time, ensures multiple epochs possible.
         self.reset_random_seed()
 
-    def reset(self, user_id=0):
+    def reset(self, plant_id=0):
         # Current state.
         self.first_step = True
-        self.state = organic  # Manually set first state as Organic.
+        self.state = organic  # Manually set first state as Organic (to get observations-> equivalent of selecting arm None for the gardener)
 
+        # set day time to zero
         self.time_generator.reset()
+        # reset the policy
         if self.agent:
             self.agent.reset()
 
         self.current_time = self.time_generator.new_time()
-        self.current_user_id = user_id
+        self.current_plant_id = plant_id
 
         # Record number of times each product seen for static policy calculation.
         self.organic_views = np.zeros(self.config.num_products)
 
     def generate_organic_sessions(self):
-
+        
         # Initialize session.
         session = OrganicSessions()
 
@@ -111,13 +125,14 @@ class AbstractEnv(gym.Env, ABC):
             # Add next product view.
             self.update_product_view()
             session.next(
-                DefaultContext(self.current_time, self.current_user_id),
+                Context_v1(self.current_time, 
+                self.current_plant_id,
+                self.maturity,
+                self.water_level),
                 self.product_view
             )
-
             # Update markov state.
             self.update_state()
-
         return session
 
     def step(self, action_id):
@@ -138,7 +153,7 @@ class AbstractEnv(gym.Env, ABC):
                 product_view - if Markov state is `organic` then it is an int
                                between 1 and P where P is the number of
                                products otherwise it is None.
-            reward (float) :
+            reward (float):
                 if the previous state was
                     `bandit` - then reward is 1 if the user clicked on the ad
                                you recommended otherwise 0
@@ -160,10 +175,10 @@ class AbstractEnv(gym.Env, ABC):
             sessions = self.generate_organic_sessions()
             return (
                 Observation(
-                    DefaultContext(
-                        self.current_time,
-                        self.current_user_id
-                    ),
+                    Context_v1(self.current_time, 
+                    self.current_plant_id,
+                    self.maturity,
+                    self.water_level),
                     sessions
                 ),
                 None,
@@ -172,13 +187,19 @@ class AbstractEnv(gym.Env, ABC):
             )
 
         assert (action_id is not None)
-        # Calculate reward from action.
-        reward = self.draw_click(action_id)
 
         self.update_state()
 
-        if reward == 1:
-            self.state = organic  # After a click, Organic Events always follow.
+        ## Need to update environment
+        self.update_env(action_id)
+
+        
+        # Calculate reward from action.
+        reward = self.draw_click(action_id)
+
+
+        #if self.action_dict[action_id] == 'observe':
+        #    self.state = organic  # After a click, Organic Events always follow.
 
         # Markov state dependent logic.
         if self.state == organic:
@@ -188,22 +209,34 @@ class AbstractEnv(gym.Env, ABC):
 
         return (
             Observation(
-                DefaultContext(self.current_time, self.current_user_id),
+                Context_v1(self.current_time, 
+                self.current_plant_id,
+                self.maturity,
+                self.water_level),
                 sessions
             ),
             reward,
-            self.state == stop,
+            (self.state == stop) | (self.harvested),
             info
         )
 
+    # New stuff
+    def update_env(self,action_id):
+        actions = ['water','harvest']
+        a = actions[action_id]
+        if self.state == organic:
+            pass
+        elif a == 'water':
+            self.water_level += 3
+        elif a == 'harvest':
+            self.harvested = True
+
+        self.maturity += 0.1*self.water_level
+        self.water_level -= 1
 
 
 
-
-
-
-
-
+'''
     def step_offline(self, observation, reward, done):
         """Call step function wih the policy implemented by a particular Agent."""
 
@@ -218,6 +251,7 @@ class AbstractEnv(gym.Env, ABC):
                 # Select a Product randomly.
                 action = {
                     't': observation.context().time(),
+                    'weather': observation.context().weather(),
                     'u': observation.context().user(),
                     'a': np.int16(self.rng.choice(self.config.num_products)),
                     'ps': 1.0 / self.config.num_products,
@@ -263,11 +297,12 @@ class AbstractEnv(gym.Env, ABC):
 
         data = {
             't': [],
-            'u': [],
+            'plant_id': [],
+            'maturity': [],
+            'water_level': [],
             'z': [],
-            'v': [],
-            'a': [],
-            'c': [],
+            'action': [],
+            'cost': [],
             'ps': [],
             'ps-a': [],
         }
@@ -277,11 +312,12 @@ class AbstractEnv(gym.Env, ABC):
             assert (observation.sessions() is not None)
             for session in observation.sessions():
                 data['t'].append(session['t'])
-                data['u'].append(session['u'])
-                data['z'].append('organic')
-                data['v'].append(session['v'])
-                data['a'].append(None)
-                data['c'].append(None)
+                data['plant_id'].append(session['plant_id'])
+                data['maturity'].append(session['maturity'])
+                data['water_level'].append(session['water_level'])
+                data['z'].append('observation')
+                data['action'].append(None)
+                data['cost'].append(None)
                 data['ps'].append(None)
                 data['ps-a'].append(None)
 
@@ -289,11 +325,12 @@ class AbstractEnv(gym.Env, ABC):
             if action:
                 assert (reward is not None)
                 data['t'].append(action['t'])
-                data['u'].append(action['u'])
-                data['z'].append('bandit')
-                data['v'].append(None)
-                data['a'].append(action['a'])
-                data['c'].append(reward)
+                data['plant_id'].append(action['plant_id'])
+                data['maturity'].append(action['maturity'])
+                data['water_level'].append(action['water_level'])
+                data['z'].append('working_bandit')
+                data['action'].append(action['action'])
+                data['cost'].append(reward)
                 data['ps'].append(action['ps'])
                 data['ps-a'].append(action['ps-a'] if 'ps-a' in action else ())
 
@@ -332,4 +369,4 @@ class AbstractEnv(gym.Env, ABC):
         if agent:
             self.agent = old_agent
 
-        return pd.DataFrame().from_dict(data)
+        return pd.DataFrame().from_dict(data)'''

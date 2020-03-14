@@ -1,8 +1,8 @@
-from .envs import env_0_args, env_1_args
+from .envs import env_0_args, env_1_args, garden_env_1_args
 from .envs import Observation
 from .envs import Configuration
 from .envs import Session
-from .envs import Context, DefaultContext
+from .envs import Context, Context_v1
 
 from .constants import (
     AgentStats,
@@ -44,3 +44,7 @@ register(
     entry_point = 'recogym.envs:RecoEnv1'
 )
 
+register(
+    id = 'garden-gym-v1',
+    entry_point = 'recogym.envs:GardenEnv1'
+)

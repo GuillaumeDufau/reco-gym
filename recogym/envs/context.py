@@ -1,5 +1,8 @@
 class Context:
-
+    """
+    Basic context element with only simple weather.
+    Either sun or rain at random
+    """
     def time(self):
         raise NotImplemented
 
@@ -19,3 +22,4 @@ class DefaultContext(Context):
 
     def user(self):
         return self.current_user_id
+

@@ -11,7 +11,9 @@ import numpy as np
 from scipy.stats.distributions import beta
 from tqdm import trange, tqdm
 
-from recogym import AgentStats, DefaultContext, Observation
+from recogym import Context_v1, Observation, AgentStats
+
+#from recogym import AgentStats, DefaultContext, Observation
 from recogym.envs.session import OrganicSessions
 
 CACHE_DIR = os.path.join(os.path.join(str(Path.home()), '.reco-gym'), 'cache')
