@@ -140,7 +140,7 @@ class PopularityAgent(Agent):
         return {
             **super().act(observation, reward, done),
             **{
-                'a': action,
+                'action': action,
                 'ps': 1/2
             }
         }
@@ -191,7 +191,7 @@ for _ in range(num_online_users):
     done = None
     while not done:
         action = agent.act(observation, reward, done)
-        observation, reward, done, info = env.step(action['a'])
+        observation, reward, done, info = env.step(action['action'])
 
         # Used for calculating click through rate.
         num_clicks += 1 if reward == 1 and reward is not None else 0
@@ -218,18 +218,20 @@ from copy import deepcopy
 
 env_1_args['random_seed'] = 42
 
-env = gym.make('reco-gym-v1')
-env.init_gym(env_1_args)
+env = gym.make('garden-gym-v1')
+env.init_gym(garden_env_1_args)
 
 # Import the random agent.
 from recogym.agents import RandomAgent, random_args
 
+random_args['num_products'] = 2
 # Create the two agents.
-num_products = env_1_args['num_products']
-popularity_agent = PopularityAgent(Configuration(env_1_args))
+num_products = 2 #env_1_args['num_products'] ################
+popularity_agent = PopularityAgent(Configuration(garden_env_1_args))
 agent_rand = RandomAgent(Configuration({
-    **env_1_args,
-    **random_args,
+    **garden_env_1_args,
+    **random_args
+
 }))
 
 

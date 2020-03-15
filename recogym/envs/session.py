@@ -23,6 +23,7 @@ class OrganicSessions(Session):
         self.append(
             {
                 't': context.time(),
+
                 'u': context.user(),
                 'z': 'pageview',
                 'v': product

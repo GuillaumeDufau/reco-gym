@@ -76,7 +76,7 @@ class AbstractEnv(gym.Env, ABC):
 
         # Defining Action Space. Gym spaces. Potential actions of the gardener -> randomness underlying those choses
         # due to the weather conditions and the actual state of the plant
-        self.action_space = Discrete(3) #num_products
+        self.action_space = Discrete(2) #num_products
 
         #############
         if 'time_generator' not in args:
@@ -134,6 +134,19 @@ class AbstractEnv(gym.Env, ABC):
             # Update markov state.
             self.update_state()
         return session
+    
+    def update_env(self,action_id):
+        actions = ['water','harvest']
+        a = actions[action_id]
+        if self.state == organic:
+            pass
+        elif a == 'water':
+            self.water_level += 3
+        elif a == 'harvest':
+            self.harvested = True
+
+        self.maturity += 0.1*self.water_level
+        self.water_level -= 1
 
     def step(self, action_id):
         """
@@ -220,23 +233,8 @@ class AbstractEnv(gym.Env, ABC):
             info
         )
 
-    # New stuff
-    def update_env(self,action_id):
-        actions = ['water','harvest']
-        a = actions[action_id]
-        if self.state == organic:
-            pass
-        elif a == 'water':
-            self.water_level += 3
-        elif a == 'harvest':
-            self.harvested = True
 
-        self.maturity += 0.1*self.water_level
-        self.water_level -= 1
-
-
-
-'''
+    
     def step_offline(self, observation, reward, done):
         """Call step function wih the policy implemented by a particular Agent."""
 
@@ -251,9 +249,10 @@ class AbstractEnv(gym.Env, ABC):
                 # Select a Product randomly.
                 action = {
                     't': observation.context().time(),
-                    'weather': observation.context().weather(),
-                    'u': observation.context().user(),
-                    'a': np.int16(self.rng.choice(self.config.num_products)),
+                    'maturity': observation.context().maturity(),
+                    'plant_id': observation.context().plant(),
+                    'water_level': observation.context().water_level(), 
+                    'action': np.int16(self.rng.choice(2)), #self.config.num_products
                     'ps': 1.0 / self.config.num_products,
                     'ps-a': (
                         np.ones(self.config.num_products) / self.config.num_products
@@ -266,7 +265,10 @@ class AbstractEnv(gym.Env, ABC):
             return (
                 action,
                 Observation(
-                    DefaultContext(self.current_time, self.current_user_id),
+                    Context_v1(self.current_time, 
+                    self.current_plant_id,
+                    self.maturity,
+                    self.water_level),
                     self.empty_sessions
                 ),
                 0,
@@ -275,7 +277,7 @@ class AbstractEnv(gym.Env, ABC):
             )
         else:
             observation, reward, done, info = self.step(
-                action['a'] if action is not None else None
+                action['action'] if action is not None else None
             )
 
             return action, observation, reward, done, info
@@ -290,7 +292,7 @@ class AbstractEnv(gym.Env, ABC):
         Produce logs of applying an Agent in the Environment for the specified amount of Users.
         If the Agent is not provided, then the default Agent is used that randomly selects an Action.
         """
-
+        
         if agent:
             old_agent = self.agent
             self.agent = agent
@@ -326,8 +328,8 @@ class AbstractEnv(gym.Env, ABC):
                 assert (reward is not None)
                 data['t'].append(action['t'])
                 data['plant_id'].append(action['plant_id'])
-                data['maturity'].append(action['maturity'])
-                data['water_level'].append(action['water_level'])
+                data['maturity'].append(None)
+                data['water_level'].append(None)
                 data['z'].append('working_bandit')
                 data['action'].append(action['action'])
                 data['cost'].append(reward)
@@ -335,12 +337,16 @@ class AbstractEnv(gym.Env, ABC):
                 data['ps-a'].append(action['ps-a'] if 'ps-a' in action else ())
 
         unique_user_id = 0
+        print("trange")
+        print(f"Number of organic offline users {num_organic_offline_users}")
         for _ in trange(num_organic_offline_users, desc='Organic Users'):
+            print("in trange")
             self.reset(unique_user_id)
             unique_user_id += 1
             observation, _, _, _ = self.step(None)
             _store_organic(observation)
 
+        # here was for _ in trange(num_offline_users, desc='Users'):...
         for _ in trange(num_offline_users, desc='Users'):
             self.reset(unique_user_id)
             unique_user_id += 1
@@ -361,12 +367,13 @@ class AbstractEnv(gym.Env, ABC):
             _store_bandit(action, reward)
 
         data['t'] = np.array(data['t'], dtype=np.float32)
-        data['u'] = pd.array(data['u'], dtype=pd.UInt16Dtype())
-        data['v'] = pd.array(data['v'], dtype=pd.UInt16Dtype())
-        data['a'] = pd.array(data['a'], dtype=pd.UInt16Dtype())
-        data['c'] = np.array(data['c'], dtype=np.float32)
+        data['plant_id'] = pd.array(data['plant_id'], dtype=pd.UInt16Dtype())
+        data['maturity'] = pd.array(data['maturity'], dtype = np.float32)#, dtype=pd.UInt16Dtype()
+        data['water_level'] = pd.array(data['water_level'], dtype=pd.UInt16Dtype())#, dtype=pd.UInt16Dtype()
+        data['action'] = pd.array(data['action'], dtype=pd.UInt16Dtype())#, dtype=pd.UInt16Dtype()
+        data['cost'] = np.array(data['cost'], dtype=np.float32)#, dtype=np.float32
 
         if agent:
             self.agent = old_agent
 
-        return pd.DataFrame().from_dict(data)'''
+        return pd.DataFrame().from_dict(data)

@@ -23,7 +23,7 @@ class RandomAgent(Agent):
         return {
             **super().act(observation, reward, done),
             **{
-                'a': self.rng.choice(self.config.num_products),
+                'action': self.rng.choice(self.config.num_products),
                 'ps': 1.0 / float(self.config.num_products),
                 'ps-a': (
                     np.ones(self.config.num_products) / self.config.num_products

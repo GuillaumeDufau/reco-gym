@@ -22,7 +22,7 @@ class Agent:
            agent recommends"""
         return {
             't': observation.context().time(),
-            'u': observation.context().plant(),
+            'plant_id': observation.context().plant(),
         }
 
     def train(self, observation, action, reward, done=False):

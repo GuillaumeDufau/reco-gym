@@ -14,7 +14,7 @@ from tqdm import trange, tqdm
 from recogym import Context_v1, Observation, AgentStats
 
 #from recogym import AgentStats, DefaultContext, Observation
-from recogym.envs.session import OrganicSessions
+from recogym.envs.session_plant import OrganicSessions
 
 CACHE_DIR = os.path.join(os.path.join(str(Path.home()), '.reco-gym'), 'cache')
 
@@ -90,13 +90,14 @@ def _collect_stats(args):
         train_env = env
 
     if with_cache:
+        print("we are in with_cache")
         data = _cached_data(train_env, num_organic_offline_users, num_offline_users)
 
         def _train(observation, session, action, reward, time, done):
             if observation:
                 assert session is not None
             else:
-                observation = Observation(DefaultContext(time, current_user), session)
+                observation = Observation(Context_v1(time, current_user), session)
             new_agent.train(observation, action, reward, done)
             return None, OrganicSessions(), None, None
 
@@ -140,9 +141,9 @@ def _collect_stats(args):
                     assert (not np.isnan(v))
                     assert (np.isnan(a))
                     assert (np.isnan(c))
-                    current_session.next(DefaultContext(t, u), np.int16(v))
+                    current_session.next(Context_v1(t, u), np.int16(v))
                 else:
-                    last_observation = Observation(DefaultContext(t, u), current_session)
+                    last_observation = Observation(Context_v1(t, u), current_session)
                     current_session = OrganicSessions()
                     assert (np.isnan(v))
                     assert (not np.isnan(a))
@@ -167,6 +168,7 @@ def _collect_stats(args):
                 True
             )
     else:
+        print("hey bud with dont have cash hehe (or cache ?)")
         # Offline Organic Training.
         for _ in trange(num_organic_offline_users, desc='Organic Users'):
             train_env.reset(unique_user_id)
@@ -203,7 +205,9 @@ def _collect_stats(args):
         eval_env = env
 
     stat_data = eval_env.generate_logs(num_offline_users=num_online_users, agent=new_agent)
-    rewards = stat_data[~np.isnan(stat_data['a'])]['c']
+    print(f'stats data is {stat_data}')
+    print(f'Env is {eval_env}')
+    rewards = stat_data[stat_data['action']]['cost']
     successes = np.sum(rewards)
     failures = rewards.shape[0] - successes
     print(f"END: Agent Evaluating @ Epoch #{epoch} ({time.time() - start}s)")
@@ -212,6 +216,11 @@ def _collect_stats(args):
         AgentStats.SUCCESSES: successes,
         AgentStats.FAILURES: failures,
     }
+
+
+
+
+
 
 
 def test_agent(
