@@ -50,8 +50,8 @@ def _cache_file_name(env, num_organic_offline_users: int, num_offline_users: int
 
 
 def _cached_data(env, num_organic_offline_users: int, num_offline_users: int) -> str:
-    cache_file_name = _cache_file_name(env, num_organic_offline_users, num_offline_users)
     file_path = os.path.join(CACHE_DIR, cache_file_name)
+
     if not os.path.exists(CACHE_DIR):
         os.makedirs(CACHE_DIR)
     if os.path.exists(file_path):
@@ -89,6 +89,8 @@ def _collect_stats(args):
     else:
         train_env = env
 
+
+    ## We don't use this
     if with_cache:
         print("we are in with_cache")
         data = _cached_data(train_env, num_organic_offline_users, num_offline_users)
@@ -168,11 +170,11 @@ def _collect_stats(args):
                 True
             )
     else:
-        print("hey bud with dont have cash hehe (or cache ?)")
+        #print("hey bud with dont have cash hehe (or cache ?)")
         # Offline Organic Training.
         for _ in trange(num_organic_offline_users, desc='Organic Users'):
             train_env.reset(unique_user_id)
-            unique_user_id += 1
+            unique_user_id += 1    
             new_observation, _, _, _ = train_env.step(None)
             new_agent.train(new_observation, None, None, True)
 
@@ -205,17 +207,19 @@ def _collect_stats(args):
         eval_env = env
 
     stat_data = eval_env.generate_logs(num_offline_users=num_online_users, agent=new_agent)
-    print(f'stats data is {stat_data}')
-    print(f'Env is {eval_env}')
-    rewards = stat_data[stat_data['action']]['cost']
+    #print(f'stats data is {stat_data}')
+    #print(f'Env is {eval_env}')
+    rewards = stat_data[~np.isnan(stat_data['action'])]['cost']
     successes = np.sum(rewards)
     failures = rewards.shape[0] - successes
     print(f"END: Agent Evaluating @ Epoch #{epoch} ({time.time() - start}s)")
 
-    return {
-        AgentStats.SUCCESSES: successes,
-        AgentStats.FAILURES: failures,
-    }
+    # We're just returning overall cost
+    return {AgentStats.SUCCESSES: successes}
+    #return {
+    #    AgentStats.SUCCESSES: successes,
+    #    AgentStats.FAILURES: failures,
+    #}
 
 
 
@@ -253,10 +257,11 @@ def test_agent(
 
     for result in [_collect_stats(args) for args in argss]:
         successes += result[AgentStats.SUCCESSES]
-        failures += result[AgentStats.FAILURES]
+        #failures += result[AgentStats.FAILURES]
 
     return (
-        beta.ppf(0.500, successes + 1, failures + 1),
-        beta.ppf(0.025, successes + 1, failures + 1),
-        beta.ppf(0.975, successes + 1, failures + 1)
+        successes#, failures
+        #beta.ppf(0.500, successes + 1, failures + 1),
+        #beta.ppf(0.025, successes + 1, failures + 1),
+        #beta.ppf(0.975, successes + 1, failures + 1)
     )

@@ -75,8 +75,8 @@ class GardenEnv1(AbstractEnv):
         self.generate_beta(self.config.number_of_flips)
 
     # Create a new user.
-    def reset(self, user_id=0):
-        super().reset(user_id)
+    def reset(self, user_id=0,weather = None):
+        super().reset(user_id,weather)
         self.omega = self.rng.normal(
             0, self.config.sigma_omega_initial, size=(self.config.K, 1)
         )
@@ -117,17 +117,21 @@ class GardenEnv1(AbstractEnv):
         if self.state == organic:
             return 0
  
-        actions = ['water','harvest']
+        actions = self.action_dict
         a = actions[recommendation]
         reward = 0
 
         if a == 'water':
             reward = -1
         elif a == 'harvest':
-            if self.maturity >= 8:
-                reward = 100
+            if (self.maturity >= 12):# & (self.maturity <= 120):
+                reward = 1024
             else:
-                reward = 0
+                reward = -1000
+        elif a == 'wait':
+            reward = -2
+        elif a == 'fertilize':
+            reward = -5
 
         return reward
 

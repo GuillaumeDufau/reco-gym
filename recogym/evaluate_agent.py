@@ -732,33 +732,35 @@ def plot_roi(
 def verify_agents(env, number_of_users, agents):
     stat = {
         'Agent': [],
-        '0.025': [],
-        '0.500': [],
-        '0.975': [],
+        'SUCCESS': [],
+        #'0.500': [],
+        #'0.975': [],
     }
 
     for agent_id in agents:
         stat['Agent'].append(agent_id)
         data = deepcopy(env).generate_logs(number_of_users, agents[agent_id])
-        bandits = data[data['z'] == 'bandit']
-        successes = bandits[bandits['c'] == 1].shape[0]
-        failures = bandits[bandits['c'] == 0].shape[0]
-        stat['0.025'].append(beta.ppf(0.025, successes + 1, failures + 1))
-        stat['0.500'].append(beta.ppf(0.500, successes + 1, failures + 1))
-        stat['0.975'].append(beta.ppf(0.975, successes + 1, failures + 1))
-
+        print(data[data['z'] == 'working_bandit'])
+        bandits = data[data['z'] == 'working_bandit']
+        successes = sum(bandits['cost'])
+        #failures = bandits[bandits['cost'] == 0].shape[0]
+        #stat['0.025'].append(beta.ppf(0.025, successes + 1, failures + 1))
+        #stat['0.500'].append(beta.ppf(0.500, successes + 1, failures + 1))
+        #stat['0.975'].append(beta.ppf(0.975, successes + 1, failures + 1))
+        stat['SUCCESS'] = successes
+    print(stat) 
     return pd.DataFrame().from_dict(stat)
 
 
 def evaluate_IPS(agent, reco_log):
     ee = []
     for u in range(max(reco_log.u)):
-        t = np.array(reco_log[reco_log['u'] == u].t)
-        v = np.array(reco_log[reco_log['u'] == u].v)
-        a = np.array(reco_log[reco_log['u'] == u].a)
-        c = np.array(reco_log[reco_log['u'] == u].c)
-        z = list(reco_log[reco_log['u'] == u].z)
-        ps = np.array(reco_log[reco_log['u'] == u].ps)
+        t = np.array(reco_log[reco_log['plant_id'] == u].t)
+        v = np.array(reco_log[reco_log['plant_id'] == u].v)
+        a = np.array(reco_log[reco_log['plant_id'] == u].a)
+        c = np.array(reco_log[reco_log['plant_id'] == u].c)
+        z = list(reco_log[reco_log['plant_id'] == u].z)
+        ps = np.array(reco_log[reco_log['plant_id'] == u].ps)
 
         jj = 0
 
@@ -910,7 +912,7 @@ def verify_agents_recall_at_k(reco_log, agents, k=5):
 
 def plot_verify_agents(result):
     fig, ax = plt.subplots()
-    ax.set_title('CTR Estimate for Different Agents')
+    ax.set_title('')
     plt.errorbar(result['Agent'],
                  result['0.500'],
                  yerr=(result['0.500'] - result['0.025'],

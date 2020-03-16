@@ -55,7 +55,7 @@ class OrganicUserEventCounterModelBuilder(AbstractFeatureProvider):
                         features[~mask] = 0
                     action_proba = features / np.sum(features)
                 else:
-                    features = self.config.epsilon + features
+                    features = self.config.epsilon + features # adding epsilon where we dont explore to force it at some point
                     action_proba = features / np.sum(features)
 
                     if self.config.reverse_pop:
@@ -64,16 +64,16 @@ class OrganicUserEventCounterModelBuilder(AbstractFeatureProvider):
 
                 if self.config.select_randomly:
                     action = self.rng.choice(self.config.num_products, p=action_proba)
-                    if self.config.exploit_explore:
-                        ps = (
-                                (
-                                    self.config.epsilon
-                                    if is_explore_case else
-                                    1 - self.config.epsilon
-                                ) * action_proba[action]
-                        )
-                    else:
-                        ps = action_proba[action]
+                    #if self.config.exploit_explore:
+                    #    ps = (
+                    #            (
+                    #                self.config.epsilon
+                    #                if is_explore_case else
+                    #                1 - self.config.epsilon
+                    #            ) * action_proba[action]
+                    #    )
+                    #else:
+                    ps = action_proba[action]
                     if self.config.with_ps_all:
                         ps_all = action_proba
                     else:

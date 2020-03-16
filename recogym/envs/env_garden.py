@@ -18,7 +18,7 @@ from ..agents import Agent
 # Arguments shared between all environments.
 
 env_args = {
-    'num_products': 10,
+    'num_products': 4,
     'num_users': 100,
     'random_seed': np.random.randint(2 ** 31 - 1),
     # Markov State Transition Probabilities.
@@ -27,7 +27,8 @@ env_args = {
     'prob_bandit_to_organic': 0.05,
     'prob_organic_to_bandit': 0.25,
     'normalize_beta': False,
-    'with_ps_all': False
+    'with_ps_all': False,
+    'harvest_period': 12
 }
 
 
@@ -48,7 +49,7 @@ class AbstractEnv(gym.Env, ABC):
     This is the structure of one plant
     """
 
-    def __init__(self):
+    def __init__(self,weather = None):
         gym.Env.__init__(self)
         ABC.__init__(self)
 
@@ -59,24 +60,32 @@ class AbstractEnv(gym.Env, ABC):
         self.current_time = None
         self.plant_type = 'Tomato'
         self.maturity = 0
-        self.harvested = False
-        self.water_level = 6
         self.empty_sessions = OrganicSessions()
-        self.action_dict = ['water','harvest']
-    
+        self.action_dict = ['wait','water','harvest','fertilize']
+        assert(len(self.action_dict) == env_args['num_products'])
+
+        if weather is None:
+            self.weather = np.zeros((env_args['harvest_period']))
+        else:
+            assert(len(weather) == env_args['harvest_period'])
+            self.weather = weather
+
+        self.day = 0
+        self.water_level = 6
+        self.fertilizer = 10
 
     def reset_random_seed(self, epoch=0):
         # Initialize Random State.
         assert (self.config.random_seed is not None)
         self.rng = RandomState(self.config.random_seed + epoch)
 
-    def init_gym(self, args):   
+    def init_gym(self, args,weather = None):   
 
         self.config = Configuration(args)
 
         # Defining Action Space. Gym spaces. Potential actions of the gardener -> randomness underlying those choses
         # due to the weather conditions and the actual state of the plant
-        self.action_space = Discrete(2) #num_products
+        self.action_space = Discrete(env_args['num_products']) #num_products
 
         #############
         if 'time_generator' not in args:
@@ -99,7 +108,11 @@ class AbstractEnv(gym.Env, ABC):
         # Set random seed for second time, ensures multiple epochs possible.
         self.reset_random_seed()
 
-    def reset(self, plant_id=0):
+        if weather is not None:
+            assert(len(weather) == env_args['harvest_period'])
+            self.weather = weather
+
+    def reset(self, plant_id=0, weather = None):
         # Current state.
         self.first_step = True
         self.state = organic  # Manually set first state as Organic (to get observations-> equivalent of selecting arm None for the gardener)
@@ -116,6 +129,10 @@ class AbstractEnv(gym.Env, ABC):
         # Record number of times each product seen for static policy calculation.
         self.organic_views = np.zeros(self.config.num_products)
 
+        if weather is not None:
+            assert(len(weather) == env_args['harvest_period'])
+            self.weather = weather
+
     def generate_organic_sessions(self):
         
         # Initialize session.
@@ -128,7 +145,10 @@ class AbstractEnv(gym.Env, ABC):
                 Context_v1(self.current_time, 
                 self.current_plant_id,
                 self.maturity,
-                self.water_level),
+                self.water_level,
+                self.weather[self.day],
+                self.day,
+                self.fertilizer),
                 self.product_view
             )
             # Update markov state.
@@ -136,17 +156,35 @@ class AbstractEnv(gym.Env, ABC):
         return session
     
     def update_env(self,action_id):
-        actions = ['water','harvest']
+        ## End of Harvest
+        if self.day == env_args['harvest_period'] - 1:
+            self.state = stop
+            return
+
+        ## Natural evolution of the environment
+        forecast = self.weather[self.day]
+        if self.rng.binomial(1,forecast,1):
+            self.water_level += forecast * 5
+
+        ## Agent's actions
+        actions = self.action_dict
         a = actions[action_id]
         if self.state == organic:
             pass
         elif a == 'water':
-            self.water_level += 3
+            self.water_level += 5
         elif a == 'harvest':
-            self.harvested = True
+            self.state = stop
+        elif a == 'wait':
+            pass
+        elif a == 'fertilize':
+            self.fertilizer += 10
 
-        self.maturity += 0.1*self.water_level
-        self.water_level -= 1
+        self.maturity += min(self.fertilizer,10)*0.2*self.water_level if self.water_level < 12 else -0.2 * self.water_level
+        self.fertilizer = max(self.fertilizer - 2,0)
+        self.water_level = max(self.water_level - 6,0)
+        self.day += 1
+
 
     def step(self, action_id):
         """
@@ -191,7 +229,10 @@ class AbstractEnv(gym.Env, ABC):
                     Context_v1(self.current_time, 
                     self.current_plant_id,
                     self.maturity,
-                    self.water_level),
+                    self.water_level,
+                    self.weather[self.day],
+                    self.day,
+                    self.fertilizer),
                     sessions
                 ),
                 None,
@@ -202,8 +243,6 @@ class AbstractEnv(gym.Env, ABC):
         assert (action_id is not None)
 
         self.update_state()
-
-        ## Need to update environment
         self.update_env(action_id)
 
         
@@ -225,11 +264,14 @@ class AbstractEnv(gym.Env, ABC):
                 Context_v1(self.current_time, 
                 self.current_plant_id,
                 self.maturity,
-                self.water_level),
+                self.water_level,
+                self.weather[self.day],
+                self.day,
+                self.fertilizer),
                 sessions
             ),
             reward,
-            (self.state == stop) | (self.harvested),
+            self.state == stop,
             info
         )
 
@@ -268,7 +310,10 @@ class AbstractEnv(gym.Env, ABC):
                     Context_v1(self.current_time, 
                     self.current_plant_id,
                     self.maturity,
-                    self.water_level),
+                    self.water_level,
+                    self.weather[self.day],
+                    self.day,
+                    self.fertilizer),
                     self.empty_sessions
                 ),
                 0,
@@ -302,6 +347,9 @@ class AbstractEnv(gym.Env, ABC):
             'plant_id': [],
             'maturity': [],
             'water_level': [],
+            'forecast': [],
+            'day': [],
+            'fertilizer': [],
             'z': [],
             'action': [],
             'cost': [],
@@ -317,6 +365,9 @@ class AbstractEnv(gym.Env, ABC):
                 data['plant_id'].append(session['plant_id'])
                 data['maturity'].append(session['maturity'])
                 data['water_level'].append(session['water_level'])
+                data['forecast'].append(session['forecast'])
+                data['fertilizer'].append(session['fertilizer'])
+                data['day'].append(session['day'])
                 data['z'].append('observation')
                 data['action'].append(None)
                 data['cost'].append(None)
@@ -330,6 +381,9 @@ class AbstractEnv(gym.Env, ABC):
                 data['plant_id'].append(action['plant_id'])
                 data['maturity'].append(None)
                 data['water_level'].append(None)
+                data['forecast'].append(None)
+                data['fertilizer'].append(None)
+                data['day'].append(None)
                 data['z'].append('working_bandit')
                 data['action'].append(action['action'])
                 data['cost'].append(reward)
@@ -337,8 +391,6 @@ class AbstractEnv(gym.Env, ABC):
                 data['ps-a'].append(action['ps-a'] if 'ps-a' in action else ())
 
         unique_user_id = 0
-        print("trange")
-        print(f"Number of organic offline users {num_organic_offline_users}")
         for _ in trange(num_organic_offline_users, desc='Organic Users'):
             print("in trange")
             self.reset(unique_user_id)
@@ -369,7 +421,10 @@ class AbstractEnv(gym.Env, ABC):
         data['t'] = np.array(data['t'], dtype=np.float32)
         data['plant_id'] = pd.array(data['plant_id'], dtype=pd.UInt16Dtype())
         data['maturity'] = pd.array(data['maturity'], dtype = np.float32)#, dtype=pd.UInt16Dtype()
-        data['water_level'] = pd.array(data['water_level'], dtype=pd.UInt16Dtype())#, dtype=pd.UInt16Dtype()
+        data['water_level'] = pd.array(data['water_level'], dtype=np.float32)#pd.UInt16Dtype())#, dtype=pd.UInt16Dtype()
+        data['forecast'] = pd.array(data['forecast'], dtype=np.float32)
+        data['fertilizer'] = pd.array(data['fertilizer'], dtype=np.float32)
+        data['day'] = pd.array(data['day'], dtype=pd.UInt16Dtype())
         data['action'] = pd.array(data['action'], dtype=pd.UInt16Dtype())#, dtype=pd.UInt16Dtype()
         data['cost'] = np.array(data['cost'], dtype=np.float32)#, dtype=np.float32
 

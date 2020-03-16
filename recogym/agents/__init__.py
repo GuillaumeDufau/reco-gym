@@ -20,6 +20,7 @@ from .nn_ips import NnIpsAgent, nn_ips_args
 from .epsilon_greedy import EpsilonGreedy, epsilon_greedy_args
 from .logreg_poly import LogregPolyAgent, logreg_poly_args
 from .organic_user_count import OrganicUserEventCounterAgent, organic_user_count_args
+from .simple_farmer import SimpleFarmerAgent
 
 from .pytorch_mlr import PyTorchMLRAgent, pytorch_mlr_args
 

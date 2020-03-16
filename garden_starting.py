@@ -119,15 +119,16 @@ class PopularityAgent(Agent):
 
         # Track number of times each item viewed in Organic session.
         self.organic_views = np.zeros(self.config.num_products)
+        self.num_products = self.config.num_products
 
     def train(self, observation, action, reward, done):
         """Train method learns from a tuple of data.
             this method can be called for offline or online learning"""
 
         # Adding organic session to organic view counts.
-        if observation:
-            for session in observation.sessions():
-                self.organic_views[session['v']] += 1
+        #if observation:
+        #    for session in observation.sessions():
+                #self.organic_views[session['v']] += 1
 
     def act(self, observation, reward, done):
         """Act method returns an action based on current observation and past
@@ -135,15 +136,17 @@ class PopularityAgent(Agent):
 
         # Choosing action randomly in proportion with number of views.
         #prob = self.organic_views / sum(self.organic_views)
-        action = choice(2, p = [1/2, 1/2])
+        action = choice(self.num_products, p = [1./self.num_products]*self.num_products)
 
         return {
             **super().act(observation, reward, done),
             **{
                 'action': action,
-                'ps': 1/2
+                'ps': 1./self.num_products
             }
         }
+
+
 
 
 # The `PopularityAgent` class above demonstrates our preferred way to create agents for RecoGym. Notice how we have both a `train` and `act` method present. The `train` method is designed to take in training data from the environments `step_offline` method and thus has nothing to return, while the `act` method must return an action to pass back into the environment. 
@@ -154,7 +157,7 @@ class PopularityAgent(Agent):
 
 
 # Instantiate instance of PopularityAgent class.
-num_products = 10
+num_products = garden_env_1_args['num_products']
 agent = PopularityAgent(Configuration({
     **garden_env_1_args,
     'num_products': num_products,
@@ -182,10 +185,15 @@ for _ in range(num_offline_users):
 num_online_users = 100
 num_clicks, num_events = 0, 0
 
-for _ in range(num_online_users):
+## Need to generate weather forecasts, but consistent for all days of the harvest.
+# mode dictates "how rainy" the season is
+mode = 0.2
+weather = np.random.triangular(0.,mode,1.,size=garden_env_1_args['harvest_period'])
+
+for plant_id in range(num_online_users):
 
     # Reset env and set done to False.
-    env.reset()
+    env.reset(plant_id,weather)
     observation, _, done, _ = env.step(None)
     reward = None
     done = None
@@ -212,27 +220,29 @@ print(f"Click Through Rate: {ctr:.4f}")
 
 
 import gym, recogym
-from recogym import env_1_args
+#from recogym import env_1_args
 
 from copy import deepcopy
 
-env_1_args['random_seed'] = 42
+#env_1_args['random_seed'] = 42
 
 env = gym.make('garden-gym-v1')
 env.init_gym(garden_env_1_args)
 
 # Import the random agent.
-from recogym.agents import RandomAgent, random_args
+from recogym.agents import RandomAgent, random_args, SimpleFarmerAgent
 
-random_args['num_products'] = 2
+random_args['num_products'] = garden_env_1_args['num_products']
 # Create the two agents.
-num_products = 2 #env_1_args['num_products'] ################
+num_products = garden_env_1_args['num_products'] ################
 popularity_agent = PopularityAgent(Configuration(garden_env_1_args))
 agent_rand = RandomAgent(Configuration({
     **garden_env_1_args,
     **random_args
-
 }))
+
+simple_agent = SimpleFarmerAgent(Configuration(garden_env_1_args))
+
 
 
 # Now we have instances of our two agents. We can use the `test_agent` method from RecoGym and compare there performance.
@@ -243,14 +253,21 @@ agent_rand = RandomAgent(Configuration({
 
 
 # Credible interval of the CTR median and 0.025 0.975 quantile.
-recogym.test_agent(deepcopy(env), deepcopy(agent_rand), 1000, 1000)
+agent_success = recogym.test_agent(deepcopy(env), deepcopy(agent_rand), 1000, 1000)
+print(f"RandomAgent success is {agent_success}")
+
 
 
 # In[7]:
 
 
 # Credible interval of the CTR median and 0.025 0.975 quantile.
-recogym.test_agent(deepcopy(env), deepcopy(popularity_agent), 1000, 1000) 
+#agent_success = recogym.test_agent(deepcopy(env), deepcopy(popularity_agent), 1000, 1000) 
+#print(f"PopularityAgent success is {agent_success}")
 
 
 # We see an improvement in the click-through rate for the popularity agent.
+                #self.organic_views[session['v']] += 1
+
+agent_success = recogym.test_agent(deepcopy(env), deepcopy(simple_agent), 1000, 1000) 
+print(f"SimpleFarmerAgent success is {agent_success}")

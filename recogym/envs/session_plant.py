@@ -25,12 +25,16 @@ class OrganicSessions(Session):
                 't': context.time(), # time step we're in
                 'plant_id': context.plant(), # get the id of the plant
                 'maturity': context.maturity(), #get the maturity of that plant
-                'water_level': context.water_level()
+                'water_level': context.water_level(),
+                'forecast':context.forecast(),
+                'day':context.day(),
+                'fertilizer':context.fertilizer()
             }
         )
 
     def get_type(self):
         return 'organic'
 
+    ## don't really get this
     def get_views(self):
         return [p for _, _, e, p in self if e == 'pageview']

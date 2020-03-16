@@ -10,7 +10,7 @@ class Context:
         raise NotImplemented
 
 class Context_v1(Context):
-    def __init__(self, current_time, current_plant_id, maturity, water_level):
+    def __init__(self, current_time, current_plant_id, maturity, water_level,forecast,day,fertilizer):
         #(self, current_time, rain_change):
         super(Context_v1, self).__init__()
         self.current_time = current_time
@@ -18,6 +18,9 @@ class Context_v1(Context):
         #self.rain_chance = rain_chance
         self._maturity = maturity
         self._water_level = water_level
+        self._forecast = forecast
+        self._day = day
+        self._fertilizer = fertilizer
 
     def time(self):
         return self.current_time
@@ -30,18 +33,27 @@ class Context_v1(Context):
 
     def maturity(self):
         return self._maturity
+    
+    def forecast(self):
+        return self._forecast
+
+    def day(self):
+        return self._day
+    
+    def fertilizer(self):
+        return self._fertilizer
 
     
 
-class DefaultContext(Context):
-
-    def __init__(self, current_time, current_user_id):
-        super(DefaultContext, self).__init__()
-        self.current_time = current_time
-        self.current_user_id = current_user_id
-
-    def time(self):
-        return self.current_time
-
-    def user(self):
-        return self.current_user_id
+#class DefaultContext(Context):
+#
+#    def __init__(self, current_time, current_user_id):
+#        super(DefaultContext, self).__init__()
+#        self.current_time = current_time
+#        self.current_user_id = current_user_id
+#
+#    def time(self):
+#        return self.current_time
+#
+#    def user(self):
+#        return self.current_user_id
