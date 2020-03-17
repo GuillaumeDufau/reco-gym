@@ -167,7 +167,7 @@ def _collect_stats(args):
         snd: Q0.975
     """
     start = time.time()
-    print(f"START: Num of Users: {args['num_offline_users']}")
+   #print(f"START: Num of Users: {args['num_offline_users']}")
     stats = recogym.test_agent(
         deepcopy(args['env']),
         deepcopy(args['agent']),
@@ -178,7 +178,7 @@ def _collect_stats(args):
         args['epoch_with_random_reset'],
         args['with_cache'],
     )
-    print(f"END: Num of Offline Users: {args['num_offline_users']} ({time.time() - start}s)")
+    #print(f"END: Num of Offline Users: {args['num_offline_users']} ({time.time() - start}s)")
     return stats
 
 
@@ -245,7 +245,7 @@ def gather_agent_stats(
     }
 
     for agent_key in agents:
-        print(f"Agent: {agent_key}")
+        #print(f"Agent: {agent_key}")
         stats = {
             AgentStats.Q0_025: [],
             AgentStats.Q0_500: [],
@@ -315,7 +315,7 @@ def _collect_evolution_stats(args):
     start = time.time()
     epsilon = args['epsilon']
     epsilon_key = format_epsilon(epsilon)
-    print(f"START: ε = {epsilon_key}")
+    #print(f"START: ε = {epsilon_key}")
     num_evolution_steps = args['num_evolution_steps']
     rewards = recogym.evaluate_agent(
         deepcopy(args['env']),
@@ -328,7 +328,7 @@ def _collect_evolution_stats(args):
 
     assert (len(rewards[EvolutionCase.SUCCESS]) == len(rewards[EvolutionCase.FAILURE]))
     assert (len(rewards[EvolutionCase.SUCCESS]) == num_evolution_steps)
-    print(f"END: ε = {epsilon_key} ({time.time() - start}s)")
+    #print(f"END: ε = {epsilon_key} ({time.time() - start}s)")
 
     return {
         epsilon_key: {
@@ -411,7 +411,7 @@ def gather_exploration_stats(
     agents = build_agents(agents_init_data, new_env_args)
 
     for agent_key in agents:
-        print(f"Agent: {agent_key}")
+        #print(f"Agent: {agent_key}")
         agent_stats = dict()
 
         with Pool(processes=multiprocessing.cpu_count()) as pool:
@@ -740,7 +740,7 @@ def verify_agents(env, number_of_users, agents):
     for agent_id in agents:
         stat['Agent'].append(agent_id)
         data = deepcopy(env).generate_logs(number_of_users, agents[agent_id])
-        print(data[data['z'] == 'working_bandit'])
+
         bandits = data[data['z'] == 'working_bandit']
         successes = sum(bandits['cost'])
         #failures = bandits[bandits['cost'] == 0].shape[0]
@@ -749,6 +749,7 @@ def verify_agents(env, number_of_users, agents):
         #stat['0.975'].append(beta.ppf(0.975, successes + 1, failures + 1))
         stat['SUCCESS'] = successes
     print(stat) 
+
     return pd.DataFrame().from_dict(stat)
 
 

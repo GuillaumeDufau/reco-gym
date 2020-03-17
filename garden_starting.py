@@ -230,7 +230,7 @@ env = gym.make('garden-gym-v1')
 env.init_gym(garden_env_1_args)
 
 # Import the random agent.
-from recogym.agents import RandomAgent, random_args, SimpleFarmerAgent
+from recogym.agents import RandomAgent, random_args, SimpleFarmerAgent,  WaitAgent
 
 random_args['num_products'] = garden_env_1_args['num_products']
 # Create the two agents.
@@ -243,6 +243,7 @@ agent_rand = RandomAgent(Configuration({
 
 simple_agent = SimpleFarmerAgent(Configuration(garden_env_1_args))
 
+wait_agent = WaitAgent(Configuration(garden_env_1_args))
 
 
 # Now we have instances of our two agents. We can use the `test_agent` method from RecoGym and compare there performance.
@@ -268,6 +269,9 @@ print(f"RandomAgent success is {agent_success}")
 
 # We see an improvement in the click-through rate for the popularity agent.
                 #self.organic_views[session['v']] += 1
+
+agent_success = recogym.test_agent(deepcopy(env), deepcopy(wait_agent), 1000, 1000) 
+print(f"WaitAgent success is {agent_success}")
 
 agent_success = recogym.test_agent(deepcopy(env), deepcopy(simple_agent), 1000, 1000) 
 print(f"SimpleFarmerAgent success is {agent_success}")

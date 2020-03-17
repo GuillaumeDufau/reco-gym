@@ -122,16 +122,16 @@ class GardenEnv1(AbstractEnv):
         reward = 0
 
         if a == 'water':
-            reward = -1
+            reward = -1 + self.rng.normal(0,1)
         elif a == 'harvest':
-            if (self.maturity >= 12):# & (self.maturity <= 120):
-                reward = 1024
+            if (self.maturity >= 40):# & (self.maturity <= 120):
+                reward = 40 + self.rng.normal(0,40)
             else:
-                reward = -1000
+                reward = -20 + self.rng.normal(0,20)
         elif a == 'wait':
-            reward = -2
+            reward = -2 + self.rng.normal(0,2)
         elif a == 'fertilize':
-            reward = -5
+            reward = -5 + self.rng.normal(0,5)
 
         return reward
 

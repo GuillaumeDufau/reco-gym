@@ -203,10 +203,13 @@ def _collect_stats(args):
     if epoch_with_random_reset:
         eval_env = deepcopy(env)
         eval_env.reset_random_seed(epoch)
-    else:
-        eval_env = env
+    #else:
+    #    eval_env = env
 
     stat_data = eval_env.generate_logs(num_offline_users=num_online_users, agent=new_agent)
+
+    if args['plotting']:
+        plot_data = eval_env.get_env_history(num_online_users,agent = new_agent)
     #print(f'stats data is {stat_data}')
     #print(f'Env is {eval_env}')
     rewards = stat_data[~np.isnan(stat_data['action'])]['cost']
@@ -235,7 +238,8 @@ def test_agent(
         num_organic_offline_users=0,
         num_epochs=1,
         epoch_with_random_reset=False,
-        with_cache=False
+        with_cache=False,
+        plotting=True
 
 ):
     successes = 0

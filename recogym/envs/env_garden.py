@@ -28,7 +28,8 @@ env_args = {
     'prob_organic_to_bandit': 0.25,
     'normalize_beta': False,
     'with_ps_all': False,
-    'harvest_period': 12
+    'harvest_period': 12,
+    'Plot_env': False
 }
 
 
@@ -74,6 +75,18 @@ class AbstractEnv(gym.Env, ABC):
         self.water_level = 6
         self.fertilizer = 10
 
+        #Getting the history of each day
+        self.env_history = np.zeros((env_args['harvest_period'],len(self.get_env_state())))
+
+    def get_env_state(self,string = False):
+        if string:
+            return ['day','maturity','water_level','fertilizer','weather']
+        else:
+            return [self.day,self.maturity,self.water_level,self.fertilizer,self.weather]
+
+    def get_env_history(self):
+        return self.env_history
+        
     def reset_random_seed(self, epoch=0):
         # Initialize Random State.
         assert (self.config.random_seed is not None)
@@ -133,6 +146,9 @@ class AbstractEnv(gym.Env, ABC):
             assert(len(weather) == env_args['harvest_period'])
             self.weather = weather
 
+        elf.env_history = np.zeros((env_args['harvest_period'],len(self.get_env_state())))
+
+
     def generate_organic_sessions(self):
         
         # Initialize session.
@@ -159,7 +175,6 @@ class AbstractEnv(gym.Env, ABC):
         ## End of Harvest
         if self.day == env_args['harvest_period'] - 1:
             self.state = stop
-            return
 
         ## Natural evolution of the environment
         forecast = self.weather[self.day]
@@ -184,6 +199,8 @@ class AbstractEnv(gym.Env, ABC):
         self.fertilizer = max(self.fertilizer - 2,0)
         self.water_level = max(self.water_level - 6,0)
         self.day += 1
+
+        self.env_history[self.day] = self.get_env_state
 
 
     def step(self, action_id):

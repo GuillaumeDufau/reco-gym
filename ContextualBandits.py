@@ -76,7 +76,6 @@ organic_counter_agent = SimpleFarmerAgent(Configuration({
 #    **garden_env_1_args,
 #    **random_args
 #}))#SimpleFarmerAgent(Configuration(garden_env_1_args))
-
 popularity_policy_logs = get_environement(NUM_PRODUCTS).generate_logs(NUM_USERS, organic_counter_agent)
 rewards = popularity_policy_logs[~np.isnan(popularity_policy_logs['action'])]['cost']
 
@@ -228,11 +227,12 @@ class LikelihoodAgent(Agent):
             for user_state, action in zip(user_states, actions) # should be the enumerate of action
         ])
         #print("features",   features)
-        self.model = LogisticRegression(solver='lbfgs', max_iter=5000)
+        self.model = LogisticRegression(solver='lbfgs', max_iter=5000,tol = 1e-1)
         #print("before",self.model.)
         #print(f"rewards size {rewards.shape}")
         #print(f"features size {features.shape}")
-        self.model.fit(features,actions, np.exp(rewards/1000))
+
+        self.model.fit(features, actions np.exp(rewards/1000))
         #print(self.model.coef_)
 
     
@@ -265,7 +265,6 @@ class LikelihoodAgent(Agent):
         #  #  ps = 1.0
         #   # all_ps = np.zeros(self.num_products)
         #    #all_ps[action] = 1.0
-      
         return {
             **super().act(observation, reward, done),
             **{
@@ -278,8 +277,6 @@ class LikelihoodAgent(Agent):
     def reset(self):
         self.feature_provider.reset()  
 
-
-# In[8]:
 
 
 # Have a look at the feature vector used by the Likelihood agent
@@ -354,10 +351,11 @@ policy_logreg = PolicyAgent(count_product_views_feature_provider)
 policy_logreg.train(popularity_policy_logs)
 
 
+result = verify_agents(get_environement(NUM_PRODUCTS,weather = weather),NUM_USERS,{'simple farmer': organic_counter_agent})
 
 result = verify_agents(get_environement(NUM_PRODUCTS, weather = weather), NUM_USERS, {
     'likelihood logreg': likelihood_logreg, 
-    'policy logreg': policy_logreg,
+    #'policy logreg': policy_logreg,
     
 })
 

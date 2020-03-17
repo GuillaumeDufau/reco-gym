@@ -1,3 +1,5 @@
+# Only waits. For plotting purposes
+
 import numpy as np
 from numpy.random.mtrand import RandomState
 
@@ -7,10 +9,10 @@ from ..envs.env_garden import env_args as garden_env_1_args
 
 from .abstract import Agent
 
-class SimpleFarmerAgent(Agent):
+class WaitAgent(Agent):
     def __init__(self, config):
         # Set number of products as an attribute of the Agent.
-        super(SimpleFarmerAgent, self).__init__(config)
+        super(WaitAgent, self).__init__(config)
 
         # Track number of times each item viewed in Organic session.
         #self.organic_views = np.zeros(self.config.num_products)
@@ -19,8 +21,7 @@ class SimpleFarmerAgent(Agent):
         self.rng = RandomState(config.random_seed)
 
     def train(self, observation, action, reward, done):
-        """Train method learns from a tuple of data.
-            this method can be called for offline or online learning"""
+        """No Training. Only waiting"""
 
 
         # Simple Farmer doens't learn
@@ -28,12 +29,12 @@ class SimpleFarmerAgent(Agent):
         #if observation:
         #    for session in observation.sessions():
         #self.organic_views[session['v']] += 1
-        if observation.sessions():
-            features = ['water_level','fertilizer','maturity','day','forecast']
-            #print(observation.sessions())
-            last_session = observation.sessions()[-1]
-            for i, f in enumerate(features):
-                self.plant_state[i] = last_session[f]
+        #if observation.sessions():
+        #    features = ['water_level','fertilizer','maturity','day','forecast']
+        #    #print(observation.sessions())
+        #    last_session = observation.sessions()[-1]
+        #    for i, f in enumerate(features):
+        #        self.plant_state[i] = last_session[f]
 
     def act(self, observation, reward, done):
         """Act method returns an action based on current observation and past
@@ -46,39 +47,13 @@ class SimpleFarmerAgent(Agent):
         #actions are ['wait','water','harvest','fertilize']
         #features are ['water_level','fertilizer','maturity','day','forecast']
 
-        #harvesting day
-        if np.random.uniform() >= 0.99:
-            action = self.rng.choice(4)
-        else:
-            if observation.sessions():
-                features = ['water_level','fertilizer','maturity','day','forecast']
-                #print(observation.sessions())
-                last_session = observation.sessions()[-1]
-                for i, f in enumerate(features):
-                    self.plant_state[i] = last_session[f]
 
-            #print(f'Plant state is {self.plant_state}')
-            if self.plant_state[3] == (garden_env_1_args['harvest_period'] - 1):
-                action = 2
-
-            if self.plant_state[2] > 60:
-                action = 2
-            elif self.plant_state[0] <= 3:
-                action = 1
-            #no fertilizer
-            elif self.plant_state[1] == 0:
-                action = 3
-
-            #no water
-
-            else:
-                action = 0
+        action = 0
 
         return {
             **super().act(observation, reward, done),
             **{
                 'action': action,
-                'ps': 1./self.num_products
+                'ps': 1.
             }
         }
-
