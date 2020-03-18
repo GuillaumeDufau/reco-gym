@@ -273,5 +273,13 @@ print(f"RandomAgent success is {agent_success}")
 agent_success = recogym.test_agent(deepcopy(env), deepcopy(wait_agent), 1000, 1000) 
 print(f"WaitAgent success is {agent_success}")
 
-agent_success = recogym.test_agent(deepcopy(env), deepcopy(simple_agent), 1000, 1000) 
+
+
+
+
+
+agent_success, plots = recogym.test_agent(deepcopy(env), deepcopy(simple_agent), 100, 100, plotting = True) 
 print(f"SimpleFarmerAgent success is {agent_success}")
+
+plots = np.array(plots)
+print(plots)

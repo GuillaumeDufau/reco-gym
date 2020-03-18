@@ -6,7 +6,7 @@ from ..envs.configuration import Configuration
 from ..envs.env_garden import env_args as garden_env_1_args
 
 from .abstract import Agent
-
+import random
 class SimpleFarmerAgent(Agent):
     def __init__(self, config):
         # Set number of products as an attribute of the Agent.
@@ -73,6 +73,8 @@ class SimpleFarmerAgent(Agent):
 
             else:
                 action = 0
+
+        action = random.randrange(self.config.num_products)
 
         return {
             **super().act(observation, reward, done),

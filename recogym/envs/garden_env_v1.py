@@ -133,6 +133,8 @@ class GardenEnv1(AbstractEnv):
         elif a == 'fertilize':
             reward = -5 + self.rng.normal(0,5)
 
+
+
         return reward
 
     # Sample the next organic product view.

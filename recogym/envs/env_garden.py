@@ -76,17 +76,15 @@ class AbstractEnv(gym.Env, ABC):
         self.fertilizer = 10
 
         #Getting the history of each day
-        self.env_history = np.zeros((env_args['harvest_period'],len(self.get_env_state())))
+        self.env_history = None
 
     def get_env_state(self,string = False):
         if string:
             return ['day','maturity','water_level','fertilizer','weather']
         else:
-            return [self.day,self.maturity,self.water_level,self.fertilizer,self.weather]
+            return np.array([self.day,self.maturity,self.water_level,self.fertilizer,self.weather[self.day]])
 
-    def get_env_history(self):
-        return self.env_history
-        
+
     def reset_random_seed(self, epoch=0):
         # Initialize Random State.
         assert (self.config.random_seed is not None)
@@ -146,7 +144,7 @@ class AbstractEnv(gym.Env, ABC):
             assert(len(weather) == env_args['harvest_period'])
             self.weather = weather
 
-        elf.env_history = np.zeros((env_args['harvest_period'],len(self.get_env_state())))
+        self.env_history = None
 
 
     def generate_organic_sessions(self):
@@ -175,7 +173,7 @@ class AbstractEnv(gym.Env, ABC):
         ## End of Harvest
         if self.day == env_args['harvest_period'] - 1:
             self.state = stop
-
+            return
         ## Natural evolution of the environment
         forecast = self.weather[self.day]
         if self.rng.binomial(1,forecast,1):
@@ -200,7 +198,8 @@ class AbstractEnv(gym.Env, ABC):
         self.water_level = max(self.water_level - 6,0)
         self.day += 1
 
-        self.env_history[self.day] = self.get_env_state
+        self.env_state = self.get_env_state
+
 
 
     def step(self, action_id):
@@ -235,7 +234,7 @@ class AbstractEnv(gym.Env, ABC):
         """
 
         # No information to return.
-        info = {}
+        info = self.env_history
 
         if self.first_step:
             assert (action_id is None)
@@ -447,5 +446,35 @@ class AbstractEnv(gym.Env, ABC):
 
         if agent:
             self.agent = old_agent
-
         return pd.DataFrame().from_dict(data)
+
+
+    def get_env_history(
+            self,
+            num_offline_users: int,
+            agent: Agent = None,
+    ):
+        if agent:
+            old_agent = self.agent
+            self.agent = agent
+        res = None
+        unique_user_id = 0
+        for _ in trange(num_offline_users, desc='Users'):
+            self.reset(unique_user_id)
+            unique_user_id += 1
+            observation, reward, done, _ = self.step(None)
+            while not done:
+                _, _, done, info = self.step(0)
+                print(info)
+            hist = self.env_history
+            # if the terminated terminated early, pad it
+            if hist is not None:
+                print(f'hist is {hist}')
+                if hist.shape[0] < env_args['harvest_period']:
+                    hist = np.pad(hist,(0,env_args['harvest_period'] - hist.shape[0]))
+                if res is None:
+                    res = np.expand_dims(hist,0)
+                else:
+                    res = np.append(res,np.expand_dims(hist,0),axis=0)
+        print(f'res is {res}')
+        return res

@@ -203,13 +203,15 @@ def _collect_stats(args):
     if epoch_with_random_reset:
         eval_env = deepcopy(env)
         eval_env.reset_random_seed(epoch)
-    #else:
-    #    eval_env = env
+    else:
+        eval_env = env
 
     stat_data = eval_env.generate_logs(num_offline_users=num_online_users, agent=new_agent)
 
     if args['plotting']:
-        plot_data = eval_env.get_env_history(num_online_users,agent = new_agent)
+        plotting_data = eval_env.get_env_history(num_online_users,agent = new_agent)
+        print(plotting_data)
+
     #print(f'stats data is {stat_data}')
     #print(f'Env is {eval_env}')
     rewards = stat_data[~np.isnan(stat_data['action'])]['cost']
@@ -218,7 +220,7 @@ def _collect_stats(args):
     print(f"END: Agent Evaluating @ Epoch #{epoch} ({time.time() - start}s)")
 
     # We're just returning overall cost
-    return {AgentStats.SUCCESSES: successes}
+    return {AgentStats.SUCCESSES: successes,'Plotting data': plotting_data if args['plotting'] else None}
     #return {
     #    AgentStats.SUCCESSES: successes,
     #    AgentStats.FAILURES: failures,
@@ -233,13 +235,13 @@ def _collect_stats(args):
 def test_agent(
         env,
         agent,
-        num_offline_users=1000,
-        num_online_users=100,
+        num_offline_users=10,
+        num_online_users=10,
         num_organic_offline_users=0,
         num_epochs=1,
         epoch_with_random_reset=False,
         with_cache=False,
-        plotting=True
+        plotting=False
 
 ):
     successes = 0
@@ -255,16 +257,19 @@ def test_agent(
             'epoch_with_random_reset': epoch_with_random_reset,
             'epoch': epoch,
             'with_cache': with_cache,
+            'plotting': plotting
         }
         for epoch in range(num_epochs)
     ]
 
+    plotting_dict = []
     for result in [_collect_stats(args) for args in argss]:
         successes += result[AgentStats.SUCCESSES]
+        plotting_dict.append(result['Plotting data'])
         #failures += result[AgentStats.FAILURES]
 
     return (
-        successes#, failures
+        successes,plotting_dict if plotting else None#, failures
         #beta.ppf(0.500, successes + 1, failures + 1),
         #beta.ppf(0.025, successes + 1, failures + 1),
         #beta.ppf(0.975, successes + 1, failures + 1)

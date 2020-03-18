@@ -108,7 +108,6 @@ class ProductCountFeatureProvider(FeatureProvider):
 
         try:
             last_session = observation.sessions()[-1]
-
         
             for i,f in enumerate(features):
                 self.feature_data[i] = last_session[f]
@@ -220,20 +219,23 @@ class LikelihoodAgent(Agent):
     
     def train(self, logs):
         user_states, actions, rewards, proba_actions = build_rectangular_data(logs, self.feature_provider)
-        #print(user_states)
+        print(user_states)
       
         features = np.vstack([
             self._create_features(user_state, action) 
             for user_state, action in zip(user_states, actions) # should be the enumerate of action
         ])
-        #print("features",   features)
-        self.model = LogisticRegression(solver='lbfgs', max_iter=5000,tol = 1e-1)
+        self.model = LogisticRegression() #, tol = 1e-1
         #print("before",self.model.)
-        #print(f"rewards size {rewards.shape}")
+        print(f"rewards size {rewards.shape}")
         #print(f"features size {features.shape}")
+        print("features shape training:",features.shape,features) # 4 actions 5 states allgood
+        print("rewardsshape training:", rewards.shape, rewards.astype(float))
+        self.model.fit(features.astype(float), rewards.astype(int))#actions, np.exp(rewards/1000)
+        print(self.model.coef_)
 
-        self.model.fit(features, actions np.exp(rewards/1000))
-        #print(self.model.coef_)
+        #['water_level','fertilizer','maturity','day','forecast']
+        #['wait','water','harvest','fertilize']
 
     
     def _score_products(self, user_state):
@@ -244,6 +246,7 @@ class LikelihoodAgent(Agent):
         ])
         #print(f'all_action_features shape {all_action_features.shape}')
         #print(self.model.predict_proba(all_action_features).shape)
+        print(self.model.predict_proba(all_action_features))
         temp = self.model.predict_proba(all_action_features)[0, :]
         #print("predictionof the likelihood fun", temp)
         return temp
