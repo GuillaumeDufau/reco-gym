@@ -4,7 +4,6 @@ import gym
 import pandas as pd
 from recogym import (
     Configuration,
-    env_1_args,
     gather_agent_stats,
     build_agent_init,
     AgentStats

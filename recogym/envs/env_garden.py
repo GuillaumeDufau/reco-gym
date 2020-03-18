@@ -74,6 +74,8 @@ class AbstractEnv(gym.Env, ABC):
         self.day = 0
         self.water_level = 3
         self.fertilizer = 0
+        self.water_opti = 10
+        self.ferti_opti = 10
 
         #Getting the history of each day
         self.env_history = None
@@ -182,24 +184,9 @@ class AbstractEnv(gym.Env, ABC):
         ## Agent's actions
         actions = self.action_dict
         a = actions[action_id]
-        # if self.state == organic:
-        #     pass
-        # elif a == 'water':
-        #     self.water_level += 5
-        # elif a == 'harvest':
-        #     self.state = stop
-        # elif a == 'wait':
-        #     pass
-        # elif a == 'fertilize':
-        #     self.fertilizer += 10
-        #
-        # self.maturity += min(self.fertilizer,10)*0.2*self.water_level if self.water_level < 12 else -0.2 * self.water_level
-        # self.fertilizer = max(self.fertilizer - 2,0)
-        # self.water_level = max(self.water_level - 6,0)
-        #
 
-        water_opti = 10
-        ferti_opti = 10
+        water_opti = self.water_opti
+        ferti_opti = self.ferti_opti
         rng = self.rng.normal(0, 1)
         if self.state == organic:
             pass

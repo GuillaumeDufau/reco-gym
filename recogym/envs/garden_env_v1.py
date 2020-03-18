@@ -103,58 +103,26 @@ class GardenEnv1(AbstractEnv):
     # click ~ Bernoulli().
     def draw_click(self, recommendation):
         # Personalised CTR for every recommended product.
-        '''
-        if self.config.change_omega_for_bandits or self.context_switch:
-            self.cached_state_seed = (
-                    self.beta @ self.omega + self.mu_bandit
-            ).ravel()
-        assert self.cached_state_seed is not None
-        ctr = ff(self.cached_state_seed)
-        click = self.rng.choice(
-            [0, 1],
-            p=[1 - ctr[recommendation], ctr[recommendation]]
-        )
-        if self.state == organic:
-            return 0
- 
-        actions = self.action_dict
-        a = actions[recommendation]
-        reward = 0
-
-        if a == 'water':
-            reward = -1 + self.rng.normal(0,1)
-        elif a == 'harvest':
-            if (self.maturity >= 40):# & (self.maturity <= 120):
-                reward = 40 + self.rng.normal(0,40)
-            else:
-                reward = -20 + self.rng.normal(0,20)
-        elif a == 'wait':
-            reward = -2 + self.rng.normal(0,2)
-        elif a == 'fertilize':
-            reward = -5 + self.rng.normal(0,5)'''
 
         if self.state == organic:
             return 0
         actions = self.action_dict
         a = actions[recommendation]
         reward = 0
+        # hardcoded need to be cleaned
         maturity_opti = 12
         if a == 'fertilize' or a == 'water':
             if self.maturity > maturity_opti:
-                #np.abs(self.maturity - maturity_opti)/max(self.maturity, maturity_opti)
                 reward = self.rng.binomial(1, 0.2, 1)[0]
             elif self.maturity <= maturity_opti:
-                # temp = 1 - np.abs(self.maturity - maturity_opti)/max(self.maturity, maturity_opti)
-                # print(temp)
                 reward = self.rng.binomial(1, 0.8, 1)[0]
         elif a == 'harvest':
-            if np.abs(self.maturity - maturity_opti) <= 1:  # & (self.maturity <= 120):
+            if np.abs(self.maturity - maturity_opti) <= 1:
                 reward = self.rng.binomial(1, 0.95, 1)[0]
             else:
                 reward = self.rng.binomial(1, 0.05, 1)[0]
         elif a == 'wait':
             if self.maturity > maturity_opti + 1:
-                #1 - np.abs(self.maturity - maturity_opti)/max(self.maturity, maturity_opti)
                 reward = self.rng.binomial(1, 0.8, 1)[0]
             else:
                 reward = 0

@@ -47,7 +47,7 @@ class SimpleFarmerAgent(Agent):
         #features are ['water_level','fertilizer','maturity','day','forecast']
 
         #harvesting day
-        if np.random.uniform() >= 0.99:
+        if np.random.uniform() >= 0.5:
             action = self.rng.choice(4)
         else:
             if observation.sessions():
@@ -73,8 +73,6 @@ class SimpleFarmerAgent(Agent):
 
             else:
                 action = 0
-
-        action = random.randrange(self.config.num_products)
 
         return {
             **super().act(observation, reward, done),

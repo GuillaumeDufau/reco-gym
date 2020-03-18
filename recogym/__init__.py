@@ -1,4 +1,4 @@
-from .envs import env_1_args, garden_env_1_args
+from .envs import garden_env_1_args
 from .envs import Observation
 from .envs import Configuration
 from .envs import Session

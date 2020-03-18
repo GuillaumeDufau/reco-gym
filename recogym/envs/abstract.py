@@ -12,7 +12,7 @@ from .configuration import Configuration
 from .context_plant import Context_v1
 from .features.time import DefaultTimeGenerator
 from .observation import Observation
-from .session import OrganicSessions
+from .session_plant import OrganicSessions
 from ..agents import Agent
 
 # Arguments shared between all environments.

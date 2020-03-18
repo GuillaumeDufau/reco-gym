@@ -53,26 +53,6 @@ env.init_gym(garden_env_1_args)
 env.reset()
 done = False
 
-# Counting how many steps.
-#i = 0
-
-#observation, reward, done = None, 0, False
-#while not done:
-#    action, observation, reward, done, info = env.step_offline(observation, reward, done)
-#    print(f"Step: {i} - Action: {action} - Observation: {observation.sessions()} - Reward: {reward}")
-#    i += 1
-
-
-# Okay, there's quite a bit going on here:  
-# - `action`, is a number between `0` and `num_products - 1` that references the index of the product recommended.   
-# - `observation` will either be `None` or a session of Organic data, showing the index of products the user views. 
-# - `reward` is 0 if the user does not click on the recommended product and 1 if they do.  Notice that when a user clicks on a product (Wherever the reward is 1), they start a new Organic session.
-# - `done` is a True/False flag indicating if the episode (aka user's timeline) is over.  
-# - `info` currently not used, so it is always an empty dictionary.
-# 
-# Also, notice that the first `action` is `None`.  In our implementation, the agent observes Organic behaviour before recommending anything.
-# 
-# Now, we will show calling the environment in an online manner, where the agent needs to supply an action. For demonstration purposes, we will create a list of hard-coded actions. 
 
 # In[2]:
 
@@ -261,15 +241,6 @@ print(f"RandomAgent success is {agent_success}")
 
 # In[7]:
 
-
-# Credible interval of the CTR median and 0.025 0.975 quantile.
-#agent_success = recogym.test_agent(deepcopy(env), deepcopy(popularity_agent), 1000, 1000) 
-#print(f"PopularityAgent success is {agent_success}")
-
-
-# We see an improvement in the click-through rate for the popularity agent.
-                #self.organic_views[session['v']] += 1
-
 agent_success = recogym.test_agent(deepcopy(env), deepcopy(wait_agent), 1000, 1000) 
 print(f"WaitAgent success is {agent_success}")
 
@@ -278,7 +249,7 @@ print(f"WaitAgent success is {agent_success}")
 
 
 
-agent_success, plots = recogym.test_agent(deepcopy(env), deepcopy(simple_agent), 100, 100, plotting = True) 
+agent_success, plots = recogym.test_agent(deepcopy(env), deepcopy(simple_agent), 1000, 1000, plotting = False)
 print(f"SimpleFarmerAgent success is {agent_success}")
 
 plots = np.array(plots)

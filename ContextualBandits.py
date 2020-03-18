@@ -22,7 +22,6 @@ from recogym.agents import RandomAgent, random_args
 import math
 import gym
 from copy import deepcopy
-from recogym import env_1_args
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -39,11 +38,6 @@ def get_recogym_configuration(num_products, random_seed=42):
         'num_products': num_products, 
         'random_seed': random_seed,
         'num_products': num_products,
-        # 'phi_var': 0.0,
-        # 'sigma_mu_organic': 0.,
-        # 'sigma_omega': 0.,
-        # 'K': 5,
-        # 'number_of_flips': 5,
     })
 
 
@@ -62,7 +56,7 @@ weather = np.random.triangular(0.,mode,1.,size=garden_env_1_args['harvest_period
 
 # In[3]:
 
-NUM_USERS = 1000
+NUM_PLANTS = 1000
 NUM_PRODUCTS = garden_env_1_args['num_products']
 
 
@@ -72,17 +66,9 @@ organic_counter_agent = SimpleFarmerAgent(Configuration({
            'select_randomly': False,
        }))
 
-#organic_counter_agent = RandomAgent(Configuration({
-#    **garden_env_1_args,
-#    **random_args
-#}))#SimpleFarmerAgent(Configuration(garden_env_1_args))
-popularity_policy_logs = get_environement(NUM_PRODUCTS).generate_logs(NUM_USERS, organic_counter_agent)
-# # rewards = popularity_policy_logs[~np.isnan(popularity_policy_logs['action'])]['cost']
-#
-# print(f"Printing rewards ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-# print(sum(rewards))
 
-# print(popularity_policy_logs[~np.isnan(popularity_policy_logs['action'])].groupby('action').count())
+popularity_policy_logs = get_environement(NUM_PRODUCTS).generate_logs(NUM_PLANTS, organic_counter_agent)
+
 # In[4]:
 
 
@@ -98,12 +84,10 @@ class ProductCountFeatureProvider(FeatureProvider):
     def __init__(self, config):
         super(ProductCountFeatureProvider, self).__init__(config)
 
-        #self.feature_data = np.zeros(len(self.config.action_dict)).astype(int)
         self.feature_data = np.zeros(5).astype(int)
 
 
     def observe(self, observation):
-        #here we only take the last observation into account but we could be clever
         features = ['water_level','fertilizer','maturity','day','forecast']
 
         try:
@@ -113,9 +97,7 @@ class ProductCountFeatureProvider(FeatureProvider):
                 self.feature_data[i] = last_session[f]
         except:
             pass
-        #self.feature_data[]
-        #for session in observation.sessions():
-        #    self.feature_data[int(session['v'])] += 1
+
 
     def features(self, observation):
         return self.feature_data.copy()
@@ -155,8 +137,6 @@ def build_rectangular_data(logs, feature_provider):
             # the obtained reward and the used probabilities
             feature_provider.observe(Observation(context, sessions))
             # just get the previous observations as features
-            #if np.isnan(row['action']):
-            #if ~(isinstance(row['action'],NAType)):
 
             #print(row)
             user_states += [feature_provider.features(None)] 
@@ -231,8 +211,7 @@ class LikelihoodAgent(Agent):
         
     def act(self, observation, reward, done):
         """Act method returns an action based on current observation and past history"""
-        #print(observation.sessions())
-        self.feature_provider.observe(observation) 
+        self.feature_provider.observe(observation)
         user_state = self.feature_provider.features(observation)
         prob = self._score_products(user_state)
 
@@ -305,9 +284,9 @@ policy_logreg = PolicyAgent(count_product_views_feature_provider)
 policy_logreg.train(popularity_policy_logs)
 
 
-result = verify_agents(get_environement(NUM_PRODUCTS,weather = weather),NUM_USERS,{'simple farmer': organic_counter_agent})
+result = verify_agents(get_environement(NUM_PRODUCTS,weather = weather),NUM_PLANTS,{'simple farmer': organic_counter_agent})
 
-result = verify_agents(get_environement(NUM_PRODUCTS, weather = weather), NUM_USERS, {
+result = verify_agents(get_environement(NUM_PRODUCTS, weather = weather), NUM_PLANTS, {
     'likelihood logreg': likelihood_logreg, 
     # 'policy logreg': policy_logreg,
     

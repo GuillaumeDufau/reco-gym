@@ -20,7 +20,7 @@ from recogym import (
 from recogym.agents import EpsilonGreedy, epsilon_greedy_args
 from .envs.context import DefaultContext
 from .envs.observation import Observation
-from .envs.session import OrganicSessions
+from .envs.session_plant import OrganicSessions
 
 EpsilonDelta = .02
 EpsilonSteps = 6  # Including epsilon = 0.0.

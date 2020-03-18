@@ -1,4 +1,10 @@
-# RecoGym
+# Garden Gym
+
+
+Python code for garden gym environment, modified from RecoGym. 
+Please run the scripts ContextualBandits.py and garden_starting.py
+
+## RecoGym
 
 Python code for the RecSys 2018 REVEAL workshop paper entitled 'RecoGym: A Reinforcement Learning Environment for the problem of Product Recommendation in Online Advertising'. A pre-print version of the paper can be found here - https://arxiv.org/abs/1808.00720
 

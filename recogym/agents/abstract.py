@@ -17,7 +17,7 @@ class Agent:
 
     def act(self, observation, reward, done):
         """An act method takes in an observation, which could either be
-           `None` or an Organic_Session (see recogym/session.py) and returns
+           `None` or an Organic_Session (see recogym/session_plant.py) and returns
            a integer between 0 and num_products indicating which product the
            agent recommends"""
         return {
