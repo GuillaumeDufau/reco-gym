@@ -89,8 +89,6 @@ def _collect_stats(args):
     else:
         train_env = env
 
-
-    ## We don't use this
     if with_cache:
         print("we are in with_cache")
         data = _cached_data(train_env, num_organic_offline_users, num_offline_users)
@@ -170,7 +168,6 @@ def _collect_stats(args):
                 True
             )
     else:
-        #print("hey bud with dont have cash hehe (or cache ?)")
         # Offline Organic Training.
         for _ in trange(num_organic_offline_users, desc='Organic Users'):
             train_env.reset(unique_user_id)

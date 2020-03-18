@@ -180,17 +180,6 @@ user_states, actions, rewards, proba_actions = build_rectangular_data(popularity
 
 
 # In[6]:
-
-
-#preview_start, preview_size = 500, 10
-
-#print('user product views count at action time')
-#print(user_states[preview_start:preview_start + preview_size])
-#print('taken actions', actions[preview_start:preview_start + preview_size])
-#print('obtained rewards', rewards[preview_start:preview_start + preview_size])
-#print('action probablities', proba_actions[preview_start:preview_start + preview_size])
-
-
 # # Step 3.A. Define and train the bandit likelihood agent
 
 # In order to be able to make the link between the state and the actions, we need to create cross-features 
@@ -225,31 +214,19 @@ class LikelihoodAgent(Agent):
             self._create_features(user_state, action) 
             for user_state, action in zip(user_states, actions) # should be the enumerate of action
         ])
-        self.model = LogisticRegression() #, tol = 1e-1
-        #print("before",self.model.)
-        print(f"rewards size {rewards.shape}")
-        #print(f"features size {features.shape}")
-        print("features shape training:",features.shape,features) # 4 actions 5 states allgood
-        print("rewardsshape training:", rewards.shape, rewards.astype(float))
-        self.model.fit(features.astype(float), rewards.astype(int))#actions, np.exp(rewards/1000)
-        print(self.model.coef_)
+        self.model = LogisticRegression()
+        self.model.fit(features.astype(float), rewards.astype(int))
 
-        #['water_level','fertilizer','maturity','day','forecast']
-        #['wait','water','harvest','fertilize']
+
 
     
     def _score_products(self, user_state):
-        #print(f'num products: {self.num_products}')
         all_action_features = np.array([
             self._create_features(user_state, action) 
             for action in range(self.num_products)
         ])
-        #print(f'all_action_features shape {all_action_features.shape}')
-        #print(self.model.predict_proba(all_action_features).shape)
-        # print("predict_prob", self.model.predict_proba(all_action_features))
         temp = self.model.predict_proba(all_action_features)[:, 0]
-        #print("predictionof the likelihood fun", temp)
-        # print("temptemp", temp)
+
         return temp
         
     def act(self, observation, reward, done):
@@ -258,9 +235,7 @@ class LikelihoodAgent(Agent):
         self.feature_provider.observe(observation) 
         user_state = self.feature_provider.features(observation)
         prob = self._score_products(user_state)
-        # print("blablabla",prob)
-        
-        #print(prob)
+
         try:
             action = self.random_state.choice(self.num_products, p=prob/sum(prob))
 
@@ -271,13 +246,8 @@ class LikelihoodAgent(Agent):
             ps = 1.0
             all_ps = np.zeros(self.num_products)
             all_ps[action] = 1.0
+        # ##epsilon greedy is working better, change it after tests
 
-        #else:
-        # action = np.argmax(prob)
-        # ps = 1.0
-        # all_ps = np.zeros(self.num_products)
-        # all_ps[action] = 1.0
-        print('actions', action, "state", user_state)
         return {
             **super().act(observation, reward, done),
             **{
@@ -290,39 +260,16 @@ class LikelihoodAgent(Agent):
     def reset(self):
         self.feature_provider.reset()  
 
-
-
 # Have a look at the feature vector used by the Likelihood agent
 picked_sample = 10
 
 count_product_views_feature_provider = ProductCountFeatureProvider(get_recogym_configuration(NUM_PRODUCTS))
 likelihood_logreg = LikelihoodAgent(count_product_views_feature_provider)
 
-#print('User state', user_states[picked_sample])
-#print('action', actions[picked_sample])
-#print('Created cross features')
-#print(likelihood_logreg._create_features(user_states[picked_sample], actions[picked_sample]))
-
 likelihood_logreg = LikelihoodAgent(count_product_views_feature_provider)
 likelihood_logreg.train(popularity_policy_logs)
 
-#result = verify_agents(get_environement(NUM_PRODUCTS,weather=weather), NUM_USERS, {'likelihood logreg': likelihood_logreg})
-#print(result)
-#fig = plot_verify_agents(result)
-#plt.show()
-
-
-#get_ipython().run_cell_magic('time', '', '\nlikelihood_logreg = LikelihoodAgent(count_product_views_feature_provider)\nlikelihood_logreg.train(popularity_policy_logs)')
-
-
 # In[10]:plt.show()
-
-
-#get_ipython().run_cell_magic('time', '', "\nresult = verify_agents(get_environement(NUM_PRODUCTS), NUM_USERS, {'likelihood logreg': likelihood_logreg})\nfig = plot_verify_agents(result)\nplt.show()")
-
-#result = verify_agents(get_environement(NUM_PRODUCTS), NUM_USERS, {'likelihood logreg': likelihood_logreg})
-#fig = plot_verify_agents(result)
-#plt.show()
 
 # # Step 3.B. Define and train the Contextual Bandit agent
 class PolicyAgent(LikelihoodAgent):
@@ -350,13 +297,7 @@ class PolicyAgent(LikelihoodAgent):
     def _score_products(self, user_state):
         return self.model.predict_proba(self._create_features(user_state, None).reshape(1, -1))[0, :]
 
-
-
-
 # In[12]:
-
-
-#get_ipython().run_cell_magic('time', '', '\npolicy_logreg = PolicyAgent(count_product_views_feature_provider)\npolicy_logreg.train(popularity_policy_logs)')
 
 
 # In[13]:
@@ -371,98 +312,3 @@ result = verify_agents(get_environement(NUM_PRODUCTS, weather = weather), NUM_US
     # 'policy logreg': policy_logreg,
     
 })
-
-
-
-#fig = plot_verify_agents(result)
-#plt.show()
-
-
-# # Step 3.C Define and train Contextual Bandit agent on top product embeddings space
-
-# In[14]:
-
-'''
-# Embeddings from previous notebook
-def create_embeddings(reco_log, num_products, embedding_size=5):
-    organic_reco_log = reco_log[reco_log['z'] == 'organic']
-
-    n_users = reco_log['u'].nunique()
-    counts = np.zeros((n_users, num_products))
-
-    binarizer = LabelBinarizer().fit(np.arange(num_products))
-    for u in range(n_users):
-        binarized_views_of_user = binarizer.transform(organic_reco_log[organic_reco_log['u'] == u]['v'])
-        counts[u, :] = binarized_views_of_user.sum(axis=0)
-
-    counts_above_zero = 1. * (counts > 0)  # above zero counts only
-    co_counts = np.matmul(counts_above_zero.T, counts_above_zero)
-
-    w, v = np.linalg.eig(co_counts)
-    idx = np.argsort(w)[::-1]
-    v = np.real(v[:, idx])
-    w = np.real(w[idx])
-
-    wdash = np.zeros_like(w)
-
-    wdash[0:embedding_size] = w[0:embedding_size]
-    embeddings = np.matmul(v, np.sqrt(np.diag(wdash)))[:, 0:embedding_size]  # keep the non-zero components
-    return embeddings
-
-
-# In[15]:
-
-
-class PolicyAgentWithEmbeddings(LikelihoodAgent):
-    def __init__(self, feature_provider, use_argmax=False, seed=43):
-        LikelihoodAgent.__init__(self, feature_provider, use_argmax=use_argmax, seed=seed)
-        self.embeddings = None
-    
-    def _create_features(self, user_state, action):
-        """Create the features that are used to estimate the expected reward from the user state.
-        """
-        # User state is the number of time each product has been seen
-        # We do a weigthed average of these products and use them as features
-        return np.average(self.embeddings, axis=0, weights=user_state)
-    
-    def train(self, reco_log):
-        user_states, actions, rewards, proba_actions = build_rectangular_data(reco_log, self.feature_provider)
-        self.embeddings = create_embeddings(reco_log, self.num_products)
-        
-        features = np.vstack([
-            self._create_features(user_state, action) 
-            for user_state, action in zip(user_states, actions)
-        ])        
-        labels = actions
-        weights = rewards / proba_actions
-                
-        self.model = LogisticRegression(multi_class='multinomial', solver='lbfgs', max_iter=5000)        
-        self.model.fit(features[weights != 0], labels[weights != 0], weights[weights != 0])
-    
-    def _score_products(self, user_state):
-        return self.model.predict_proba(self._create_features(user_state, None).reshape(1, -1))[0, :]
-
-
-# In[16]:
-
-
-#get_ipython().run_cell_magic('time', '', '\npolicy_logreg_with_embeddings = PolicyAgentWithEmbeddings(count_product_views_feature_provider)\npolicy_logreg_with_embeddings.train(popularity_policy_logs)')
-policy_logreg_with_embeddings = PolicyAgentWithEmbeddings(count_product_views_feature_provider)
-policy_logreg_with_embeddings.train(popularity_policy_logs)
-# In[17]:
-
-
-result = verify_agents(get_environement(NUM_PRODUCTS), NUM_USERS, {
-    'likelihood logreg': likelihood_logreg, 
-    'policy logreg': policy_logreg,
-    'policy logreg emb': policy_logreg_with_embeddings,    
-})
-#fig = plot_verify_agents(result)
-#plt.show()
-
-
-# In[ ]:
-
-'''
-
-
