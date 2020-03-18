@@ -113,7 +113,7 @@ class GardenEnv1(AbstractEnv):
         click = self.rng.choice(
             [0, 1],
             p=[1 - ctr[recommendation], ctr[recommendation]]
-        )'''
+        )
         if self.state == organic:
             return 0
  
@@ -131,10 +131,33 @@ class GardenEnv1(AbstractEnv):
         elif a == 'wait':
             reward = -2 + self.rng.normal(0,2)
         elif a == 'fertilize':
-            reward = -5 + self.rng.normal(0,5)
+            reward = -5 + self.rng.normal(0,5)'''
 
-
-
+        if self.state == organic:
+            return 0
+        actions = self.action_dict
+        a = actions[recommendation]
+        reward = 0
+        maturity_opti = 12
+        if a == 'fertilize' or a == 'water':
+            if self.maturity > maturity_opti:
+                #np.abs(self.maturity - maturity_opti)/max(self.maturity, maturity_opti)
+                reward = self.rng.binomial(1, 0.2, 1)[0]
+            elif self.maturity <= maturity_opti:
+                # temp = 1 - np.abs(self.maturity - maturity_opti)/max(self.maturity, maturity_opti)
+                # print(temp)
+                reward = self.rng.binomial(1, 0.8, 1)[0]
+        elif a == 'harvest':
+            if np.abs(self.maturity - maturity_opti) <= 1:  # & (self.maturity <= 120):
+                reward = self.rng.binomial(1, 0.95, 1)[0]
+            else:
+                reward = self.rng.binomial(1, 0.05, 1)[0]
+        elif a == 'wait':
+            if self.maturity > maturity_opti + 1:
+                #1 - np.abs(self.maturity - maturity_opti)/max(self.maturity, maturity_opti)
+                reward = self.rng.binomial(1, 0.8, 1)[0]
+            else:
+                reward = 0
         return reward
 
     # Sample the next organic product view.

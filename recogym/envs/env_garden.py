@@ -72,8 +72,8 @@ class AbstractEnv(gym.Env, ABC):
             self.weather = weather
 
         self.day = 0
-        self.water_level = 6
-        self.fertilizer = 10
+        self.water_level = 3
+        self.fertilizer = 0
 
         #Getting the history of each day
         self.env_history = None
@@ -182,24 +182,50 @@ class AbstractEnv(gym.Env, ABC):
         ## Agent's actions
         actions = self.action_dict
         a = actions[action_id]
+        # if self.state == organic:
+        #     pass
+        # elif a == 'water':
+        #     self.water_level += 5
+        # elif a == 'harvest':
+        #     self.state = stop
+        # elif a == 'wait':
+        #     pass
+        # elif a == 'fertilize':
+        #     self.fertilizer += 10
+        #
+        # self.maturity += min(self.fertilizer,10)*0.2*self.water_level if self.water_level < 12 else -0.2 * self.water_level
+        # self.fertilizer = max(self.fertilizer - 2,0)
+        # self.water_level = max(self.water_level - 6,0)
+        #
+
+        water_opti = 10
+        ferti_opti = 10
+        rng = self.rng.normal(0, 1)
         if self.state == organic:
             pass
         elif a == 'water':
-            self.water_level += 5
+            temp = water_opti - self.water_level - rng
+            if temp > 0:
+                self.maturity += rng
+                self.water_level += rng
+            else:
+                self.maturity -= rng
+                self.water_level += rng
         elif a == 'harvest':
             self.state = stop
         elif a == 'wait':
             pass
         elif a == 'fertilize':
-            self.fertilizer += 10
-
-        self.maturity += min(self.fertilizer,10)*0.2*self.water_level if self.water_level < 12 else -0.2 * self.water_level
-        self.fertilizer = max(self.fertilizer - 2,0)
-        self.water_level = max(self.water_level - 6,0)
+            temp = ferti_opti - self.fertilizer - rng
+            if temp > 0:
+                self.maturity += rng
+                self.water_level += rng
+            else:
+                self.maturity -= rng
+                self.water_level += rng
         self.day += 1
-
+        self.water_level -= 0.2
         self.env_state = self.get_env_state
-
 
 
     def step(self, action_id):

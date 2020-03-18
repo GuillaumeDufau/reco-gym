@@ -77,12 +77,12 @@ organic_counter_agent = SimpleFarmerAgent(Configuration({
 #    **random_args
 #}))#SimpleFarmerAgent(Configuration(garden_env_1_args))
 popularity_policy_logs = get_environement(NUM_PRODUCTS).generate_logs(NUM_USERS, organic_counter_agent)
-rewards = popularity_policy_logs[~np.isnan(popularity_policy_logs['action'])]['cost']
+# # rewards = popularity_policy_logs[~np.isnan(popularity_policy_logs['action'])]['cost']
+#
+# print(f"Printing rewards ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+# print(sum(rewards))
 
-print(f"Printing rewards ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-print(sum(rewards))
-
-print(popularity_policy_logs[~np.isnan(popularity_policy_logs['action'])].groupby('action').count())
+# print(popularity_policy_logs[~np.isnan(popularity_policy_logs['action'])].groupby('action').count())
 # In[4]:
 
 
@@ -246,9 +246,10 @@ class LikelihoodAgent(Agent):
         ])
         #print(f'all_action_features shape {all_action_features.shape}')
         #print(self.model.predict_proba(all_action_features).shape)
-        print(self.model.predict_proba(all_action_features))
-        temp = self.model.predict_proba(all_action_features)[0, :]
+        # print("predict_prob", self.model.predict_proba(all_action_features))
+        temp = self.model.predict_proba(all_action_features)[:, 0]
         #print("predictionof the likelihood fun", temp)
+        # print("temptemp", temp)
         return temp
         
     def act(self, observation, reward, done):
@@ -257,17 +258,26 @@ class LikelihoodAgent(Agent):
         self.feature_provider.observe(observation) 
         user_state = self.feature_provider.features(observation)
         prob = self._score_products(user_state)
+        # print("blablabla",prob)
         
         #print(prob)
-        action = self.random_state.choice(self.num_products, p=prob)
+        try:
+            action = self.random_state.choice(self.num_products, p=prob/sum(prob))
 
-        ps = prob[action]
-        all_ps = prob.copy()
+            ps = prob[action]
+            all_ps = prob.copy()
+        except:
+            action = np.argmax(prob)
+            ps = 1.0
+            all_ps = np.zeros(self.num_products)
+            all_ps[action] = 1.0
+
         #else:
-        # #   action = np.argmax(prob)
-        #  #  ps = 1.0
-        #   # all_ps = np.zeros(self.num_products)
-        #    #all_ps[action] = 1.0
+        # action = np.argmax(prob)
+        # ps = 1.0
+        # all_ps = np.zeros(self.num_products)
+        # all_ps[action] = 1.0
+        print('actions', action, "state", user_state)
         return {
             **super().act(observation, reward, done),
             **{
@@ -358,7 +368,7 @@ result = verify_agents(get_environement(NUM_PRODUCTS,weather = weather),NUM_USER
 
 result = verify_agents(get_environement(NUM_PRODUCTS, weather = weather), NUM_USERS, {
     'likelihood logreg': likelihood_logreg, 
-    #'policy logreg': policy_logreg,
+    # 'policy logreg': policy_logreg,
     
 })
 
